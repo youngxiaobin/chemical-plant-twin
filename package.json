@@ -1,0 +1,59 @@
+{
+  "name": "chemical-plant-twin",
+  "private": true,
+  "version": "0.1.0",
+  "license": "(MIT AND Apache-2.0 AND CC0-1.0)",
+  "author": "Xiaobin Zeng",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "start": "node scripts/start.mjs",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit --pretty false",
+    "lint": "eslint src server tests vite.config.ts",
+    "test": "node --experimental-strip-types --test tests/sim.test.ts tests/route.test.ts tests/manifest.test.ts",
+    "e2e": "node scripts/e2e.mjs",
+    "verify-versions": "node scripts/verify-versions.mjs",
+    "postinstall": "node scripts/copy-decoders.mjs",
+    "preview": "vite preview --host 0.0.0.0 --port 4317 --strictPort"
+  },
+  "dependencies": {
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "three": "0.187.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.0",
+    "@types/react": "19.2.2",
+    "@types/react-dom": "19.2.2",
+    "@types/three": "0.187.0",
+    "@vitejs/plugin-react": "6.3.0",
+    "eslint": "9.39.1",
+    "globals": "16.4.0",
+    "puppeteer-core": "24.15.0",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.46.2",
+    "vite": "8.3.8"
+  },
+  "files": [
+    "src",
+    "server",
+    "public",
+    "scripts",
+    "docs",
+    "tests",
+    "index.html",
+    "LICENSE",
+    "README.md",
+    "THIRD_PARTY_NOTICES.md",
+    "CONTRIBUTING.md",
+    "SECURITY.md",
+    "tsconfig.json",
+    "vite.config.ts",
+    "eslint.config.js",
+    ".env.example"
+  ]
+}

@@ -1,0 +1,22 @@
+Basis Universal transcoder files in this directory
+
+basis_transcoder.js
+basis_transcoder.wasm
+
+These two files are an unmodified copy of the files shipped with
+three.js 0.187.0 at examples/jsm/libs/basis/.
+three.js documents them as the Basis Universal transcoder from
+https://github.com/BinomialLLC/basis_universal
+and states that they are under the Apache License, Version 2.0.
+
+The Apache License 2.0 text is in LICENSE next to these files, and also
+in docs/licenses/Apache-2.0.txt. These files are not covered by the MIT
+license in the repository root.
+
+Verified local SHA256 on 2026-11-20:
+basis_transcoder.wasm
+6cf17dc889352c42e9acf8897107978d127005fe3386c36a0e3845e27967630a
+
+The wasm binary distributed by three.js does not embed a separate
+copyright header. This NOTICE is the attribution retained for
+redistribution. No claim is made that this NOTICE is a legal audit.

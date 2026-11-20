@@ -1,0 +1,23 @@
+name: 缺陷
+description: 本地运行、模拟数据或三维场景的问题
+title: ""
+labels: []
+body:
+  - type: textarea
+    attributes:
+      label: 发生了什么
+      description: 只写可复现的现象。不要贴密钥、私人链接或未公开漏洞细节。
+    validations:
+      required: true
+  - type: textarea
+    attributes:
+      label: 如何复现
+      description: 写明命令、端口和浏览器。
+    validations:
+      required: true
+  - type: input
+    attributes:
+      label: 版本
+      description: Node 版本和提交 SHA
+    validations:
+      required: false

@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+evidence/
+.vite/
+.env
+.env.*
+!.env.example
+coverage/
+*.tgz
+npm-debug.log*

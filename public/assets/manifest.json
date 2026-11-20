@@ -1,0 +1,372 @@
+{
+  "units": "m",
+  "up": "+Y",
+  "east": "+X",
+  "north": "-Z",
+  "site": {
+    "width": 116,
+    "depth": 90,
+    "centerX": 32,
+    "centerZ": 4,
+    "assumption": "1 unit = 1 m。约 116×90 m 示意场地，不是测绘坐标。"
+  },
+  "disclaimer": "本地确定性模拟示意，非本厂实时数据，不可用于工程决策或现场操作",
+  "geometry": "主体为原创参数化示意几何，不是工程测量模型，也不是 tevy 炼油模块的整厂复制。",
+  "assets": [
+    {
+      "id": "T-101",
+      "name": "主精馏塔",
+      "group": "精馏塔组",
+      "kind": "tower",
+      "floors": [
+        0,
+        1,
+        2
+      ],
+      "tutorialAnalog": "教程 T-201",
+      "origin": {
+        "x": -1.5,
+        "y": 0,
+        "z": 12
+      },
+      "size": {
+        "height": 44,
+        "radius": 2.25
+      },
+      "assumptions": "示意尺寸与标高，1 unit = 1 m。楼层基准 0 / 13 / 26 m。展开时每层额外抬升。"
+    },
+    {
+      "id": "T-102",
+      "name": "汽提塔",
+      "group": "精馏塔组",
+      "kind": "tower",
+      "floors": [
+        0,
+        1,
+        2
+      ],
+      "tutorialAnalog": "教程 T-202",
+      "origin": {
+        "x": -1.5,
+        "y": 0,
+        "z": -2
+      },
+      "size": {
+        "height": 40,
+        "radius": 2.05
+      },
+      "assumptions": "示意尺寸与标高，1 unit = 1 m。楼层基准 0 / 13 / 26 m。展开时每层额外抬升。"
+    },
+    {
+      "id": "T-103",
+      "name": "吸收塔",
+      "group": "精馏塔组",
+      "kind": "tower",
+      "floors": [
+        0,
+        1,
+        2
+      ],
+      "tutorialAnalog": "定稿增补，无教程位号",
+      "origin": {
+        "x": 9,
+        "y": 0,
+        "z": -18
+      },
+      "size": {
+        "height": 36,
+        "radius": 1.85
+      },
+      "assumptions": "示意尺寸与标高，1 unit = 1 m。楼层基准 0 / 13 / 26 m。展开时每层额外抬升。"
+    },
+    {
+      "id": "T-104",
+      "name": "放空塔",
+      "group": "精馏塔组",
+      "kind": "tower",
+      "floors": [
+        0,
+        1,
+        2
+      ],
+      "tutorialAnalog": "定稿增补，无教程位号",
+      "origin": {
+        "x": 20,
+        "y": 0,
+        "z": -18
+      },
+      "size": {
+        "height": 33,
+        "radius": 1.7
+      },
+      "assumptions": "示意尺寸与标高，1 unit = 1 m。楼层基准 0 / 13 / 26 m。展开时每层额外抬升。"
+    },
+    {
+      "id": "TK-201",
+      "name": "原料罐",
+      "group": "储运罐区",
+      "kind": "tank",
+      "floors": [
+        0
+      ],
+      "tutorialAnalog": "教程 TK-101",
+      "origin": {
+        "x": 52,
+        "y": 0,
+        "z": -6
+      },
+      "size": {
+        "height": 16.5,
+        "radius": 5.4
+      },
+      "assumptions": "示意尺寸与标高，1 unit = 1 m。楼层基准 0 / 13 / 26 m。展开时每层额外抬升。"
+    },
+    {
+      "id": "TK-202",
+      "name": "中间罐",
+      "group": "储运罐区",
+      "kind": "tank",
+      "floors": [
+        0
+      ],
+      "tutorialAnalog": "教程 TK-102",
+      "origin": {
+        "x": 64,
+        "y": 0,
+        "z": 9
+      },
+      "size": {
+        "height": 15,
+        "radius": 5.1
+      },
+      "assumptions": "示意尺寸与标高，1 unit = 1 m。楼层基准 0 / 13 / 26 m。展开时每层额外抬升。"
+    },
+    {
+      "id": "E-101",
+      "name": "原料预热器",
+      "group": "换热与回流",
+      "kind": "exchanger",
+      "floors": [
+        0
+      ],
+      "tutorialAnalog": "教程 E-101",
+      "origin": {
+        "x": 24,
+        "y": 1.2,
+        "z": 6.2
+      },
+      "size": {
+        "length": 7.4,
+        "radius": 0.72
+      },
+      "assumptions": "示意尺寸与标高，1 unit = 1 m。楼层基准 0 / 13 / 26 m。展开时每层额外抬升。"
+    },
+    {
+      "id": "V-301",
+      "name": "回流罐",
+      "group": "换热与回流",
+      "kind": "drum",
+      "floors": [
+        2
+      ],
+      "tutorialAnalog": "教程 V-301",
+      "origin": {
+        "x": 30.5,
+        "y": 27.75,
+        "z": 1.1
+      },
+      "size": {
+        "length": 6.2,
+        "radius": 0.95
+      },
+      "assumptions": "示意尺寸与标高，1 unit = 1 m。楼层基准 0 / 13 / 26 m。展开时每层额外抬升。"
+    },
+    {
+      "id": "CW-301",
+      "name": "轴流冷却机组",
+      "group": "冷却系统",
+      "kind": "cooler",
+      "floors": [
+        0
+      ],
+      "tutorialAnalog": "教程 E-301",
+      "origin": {
+        "x": 31,
+        "y": 0,
+        "z": 25
+      },
+      "size": {
+        "length": 10.5,
+        "width": 4.2,
+        "height": 3.2
+      },
+      "assumptions": "示意尺寸与标高，1 unit = 1 m。楼层基准 0 / 13 / 26 m。展开时每层额外抬升。"
+    },
+    {
+      "id": "CW-302",
+      "name": "冷却水池",
+      "group": "冷却系统",
+      "kind": "basin",
+      "floors": [
+        0
+      ],
+      "tutorialAnalog": "定稿公用工程，无教程位号",
+      "origin": {
+        "x": 49,
+        "y": 0,
+        "z": 28
+      },
+      "size": {
+        "width": 16,
+        "depth": 9
+      },
+      "assumptions": "示意尺寸与标高，1 unit = 1 m。楼层基准 0 / 13 / 26 m。展开时每层额外抬升。"
+    },
+    {
+      "id": "P-401",
+      "name": "进料泵",
+      "group": "管廊与机泵",
+      "kind": "pump",
+      "floors": [
+        0
+      ],
+      "tutorialAnalog": "教程 P-101",
+      "origin": {
+        "x": 46.4,
+        "y": 0,
+        "z": 3.2
+      },
+      "size": {
+        "length": 2.4,
+        "width": 1.1,
+        "height": 1.3
+      },
+      "assumptions": "示意尺寸与标高，1 unit = 1 m。楼层基准 0 / 13 / 26 m。展开时每层额外抬升。"
+    },
+    {
+      "id": "PR-401",
+      "name": "三层管廊",
+      "group": "管廊与机泵",
+      "kind": "rack",
+      "floors": [
+        0,
+        1,
+        2
+      ],
+      "tutorialAnalog": "定稿结构，无教程位号",
+      "origin": {
+        "x": 27,
+        "y": 13,
+        "z": 5
+      },
+      "size": {
+        "length": 32,
+        "width": 24,
+        "topElevation": 26
+      },
+      "assumptions": "示意尺寸与标高，1 unit = 1 m。楼层基准 0 / 13 / 26 m。展开时每层额外抬升。"
+    }
+  ],
+  "pipes": [
+    {
+      "id": "L01",
+      "name": "原料出罐",
+      "from": "TK-201",
+      "to": "P-401",
+      "fromAnchor": "outlet",
+      "toAnchor": "suction",
+      "flowAsset": "P-401",
+      "lane": "L0"
+    },
+    {
+      "id": "L02",
+      "name": "泵送进料",
+      "from": "P-401",
+      "to": "E-101",
+      "fromAnchor": "discharge",
+      "toAnchor": "inlet",
+      "flowAsset": "P-401",
+      "lane": "L0"
+    },
+    {
+      "id": "L03",
+      "name": "预热进塔",
+      "from": "E-101",
+      "to": "T-101",
+      "fromAnchor": "outlet",
+      "toAnchor": "feed",
+      "flowAsset": "E-101",
+      "lane": "L0"
+    },
+    {
+      "id": "L04",
+      "name": "塔间输送",
+      "from": "T-101",
+      "to": "T-102",
+      "fromAnchor": "overhead",
+      "toAnchor": "feed",
+      "flowAsset": "T-101",
+      "lane": "L2"
+    },
+    {
+      "id": "L05",
+      "name": "塔顶冷凝",
+      "from": "T-102",
+      "to": "CW-301",
+      "fromAnchor": "overhead",
+      "toAnchor": "processIn",
+      "flowAsset": "T-102",
+      "lane": "L2"
+    },
+    {
+      "id": "L06",
+      "name": "凝液进罐",
+      "from": "CW-301",
+      "to": "V-301",
+      "fromAnchor": "processOut",
+      "toAnchor": "inlet",
+      "flowAsset": "CW-301",
+      "lane": "L2"
+    },
+    {
+      "id": "L07",
+      "name": "回流",
+      "from": "V-301",
+      "to": "T-102",
+      "fromAnchor": "reflux",
+      "toAnchor": "reflux",
+      "flowAsset": "V-301",
+      "lane": "L2"
+    },
+    {
+      "id": "L08",
+      "name": "产品出料",
+      "from": "T-102",
+      "to": "TK-202",
+      "fromAnchor": "bottoms",
+      "toAnchor": "inlet",
+      "flowAsset": "T-102",
+      "lane": "L0"
+    },
+    {
+      "id": "L09",
+      "name": "冷却上水",
+      "from": "CW-302",
+      "to": "CW-301",
+      "fromAnchor": "supply",
+      "toAnchor": "waterIn",
+      "flowAsset": "CW-302",
+      "lane": "L0"
+    },
+    {
+      "id": "L10",
+      "name": "吸收尾气",
+      "from": "T-103",
+      "to": "T-104",
+      "fromAnchor": "overhead",
+      "toAnchor": "feed",
+      "flowAsset": "T-103",
+      "lane": "L1"
+    }
+  ]
+}

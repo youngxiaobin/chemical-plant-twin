@@ -1,0 +1,22 @@
+plane-tree-v1-lod2.glb
+
+Source page: https://tevy.dev/models/plane-tree
+Versioned file: https://tevy.dev/models/plane-tree/v1/lod2.glb
+Publisher metadata: https://tevy.dev/models/plane-tree.json
+Site-wide statement: https://tevy.dev/llms.txt
+
+The publisher metadata field "license" is "CC0-1.0".
+The site text says the catalog is CC0 1.0.
+This file is not relicensed under the MIT license in the repository root.
+
+Re-checked on 2026-11-20:
+- metadata license field: CC0-1.0
+- metadata sha256: 76001c5667fb27e2e3da3d9b512ab33a2108dd67bb98231ec69f55f069158da2
+- local file sha256 matches that value
+- size 563224 bytes, LOD2, 4736 triangles, meters, +Y up
+
+The CC0 1.0 legal code is in ../../docs/licenses/CC0-1.0.txt.
+That text is Creative Commons' legal code, not a statement that this
+repository's authors are the CC0 affirmer. The affirmer is the tevy
+publisher, according to their own metadata. This notice is not a legal
+audit of that dedication.
