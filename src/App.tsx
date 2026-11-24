@@ -7,7 +7,6 @@ import { DEFAULT_WEATHER, weatherPreset, type FloorFilter, type LinkStatus, type
 import { BottomBar, LeftDock, RightDock, TopBar } from './ui/Hud.tsx';
 
 export function App() {
-  const api = useRef<ViewportApi>({ scene: null, onPick: () => undefined });
   const linkHandle = useRef<ReturnType<typeof connectTelemetry> | null>(null);
   const [frame, setFrame] = useState<TelemetryFrame | null>(null);
   const [link, setLink] = useState<LinkStatus>('connecting');
@@ -19,9 +18,11 @@ export function App() {
   const [weather, setWeather] = useState<WeatherState>(DEFAULT_WEATHER);
   const [quality, setQuality] = useState<QualityTier>('medium');
   const [query, setQuery] = useState('');
-  const [trend, setTrend] = useState<Record<string, number[]>>({});
+  const [trend, setTrend] = useState<{ seq: number; temperatures: Record<string, number[]> } | null>(null);
   const [load, setLoad] = useState(78);
+  const [drillPaused, setDrillPaused] = useState(false);
   const [touring, setTouring] = useState(false);
+  const api = useRef<ViewportApi>({ scene: null, onPick: () => undefined, onTourChange: setTouring });
   const [clock, setClock] = useState(() => new Date());
   const [controlError, setControlError] = useState<string | null>(null);
   const reduced = useMemo(() => window.matchMedia('(prefers-reduced-motion: reduce)').matches, []);
@@ -40,14 +41,17 @@ export function App() {
       onFrame: (next) => {
         setFrame(next);
         setLoad(Math.round(next.load * 100));
+        setDrillPaused(next.paused);
         setTrend((prev) => {
-          const updated: Record<string, number[]> = {};
+          if (prev?.seq === next.seq) return prev;
+          const history = prev && prev.seq < next.seq ? prev.temperatures : null;
+          const temperatures: Record<string, number[]> = {};
           for (const asset of ASSETS) {
             const value = next.assets[asset.id]?.temperature.value;
             if (value === undefined) continue;
-            updated[asset.id] = [...(prev[asset.id] ?? []), value].slice(-40);
+            temperatures[asset.id] = [...(history?.[asset.id] ?? []), value].slice(-40);
           }
-          return updated;
+          return { seq: next.seq, temperatures };
         });
       },
     });
@@ -92,9 +96,9 @@ export function App() {
   async function send(body: Record<string, unknown>, optimisticLoad?: number) {
     if (optimisticLoad !== undefined) setLoad(optimisticLoad);
     try {
-      const next = await postControl(body);
-      setFrame(next);
-      setLoad(Math.round(next.load * 100));
+      const receipt = await postControl(body);
+      if (body.reset === true) setLoad(Math.round(receipt.load * 100));
+      if (body.reset === true || typeof body.paused === 'boolean') setDrillPaused(receipt.paused);
       setControlError(null);
     } catch (error) {
       setControlError(error instanceof Error ? error.message : '模拟服务没有响应');
@@ -134,8 +138,9 @@ export function App() {
         selected={selected ? assetById(selected) : null}
         frame={frame}
         link={link}
-        trend={selected ? trend[selected] ?? [] : []}
+        trend={selected ? trend?.temperatures[selected] ?? [] : []}
         load={load}
+        drillPaused={drillPaused}
         weather={weather}
         quality={quality}
         floor={floor}
@@ -148,7 +153,7 @@ export function App() {
         onLoad={(value) => void send({ load: value / 100 }, value)}
         onFault={() => void send({ fault: 'cooling' })}
         onRecover={() => void send({ fault: 'none' })}
-        onPause={() => void send({ paused: !(frame?.paused ?? false) })}
+        onPause={() => void send({ paused: !drillPaused })}
         onReset={() => void send({ reset: true })}
         onWeather={(mode) => setWeather((current) => weatherPreset(mode, current))}
         onRain={(rain) => setWeather((current) => ({ ...current, rain }))}
@@ -164,22 +169,15 @@ export function App() {
           setExpanded(false);
           setIsolated(false);
           api.current.scene?.resetView();
-          setTouring(false);
         }}
-        onHome={() => {
-          api.current.scene?.resetView();
-          setTouring(false);
-        }}
-        onTop={() => {
-          api.current.scene?.topView();
-          setTouring(false);
-        }}
-        onTour={() => setTouring(api.current.scene?.toggleTour() ?? false)}
+        onHome={() => api.current.scene?.resetView()}
+        onTop={() => api.current.scene?.topView()}
+        onTour={() => api.current.scene?.toggleTour()}
         onFocus={() => {
           if (selected) api.current.scene?.focus(selected);
         }}
       />
-      <BottomBar selected={selected ? assetById(selected) : null} frame={frame} link={link} load={load} />
+      <BottomBar selected={selected ? assetById(selected) : null} frame={frame} link={link} />
       <p className="disclaimer">{DISCLAIMER}</p>
     </div>
   );

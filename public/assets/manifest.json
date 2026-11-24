@@ -345,7 +345,7 @@
       "to": "TK-202",
       "fromAnchor": "bottoms",
       "toAnchor": "inlet",
-      "flowAsset": "T-102",
+      "flowAsset": "TK-202",
       "lane": "L0"
     },
     {

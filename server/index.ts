@@ -2,6 +2,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import { ASSETS, PIPES } from '../src/sim/plant.ts';
 import { computeReadings, isFaultMode, stepStress } from '../src/sim/telemetry.ts';
 import { DISCLAIMER, SAMPLE_MS, STALE_MS, type FaultMode, type TelemetryFrame } from '../src/sim/types.ts';
+import { writeTelemetryEvent } from './sse.ts';
 
 const port = Number(process.env.SIM_PORT ?? 4318);
 const host = process.env.SIM_HOST ?? '127.0.0.1';
@@ -29,13 +30,8 @@ function frame(): TelemetryFrame {
   };
 }
 
-function writeEvent(response: ServerResponse, payload: TelemetryFrame): void {
-  response.write(`data: ${JSON.stringify(payload)}\n\n`);
-}
-
-function broadcast(): void {
-  const payload = frame();
-  for (const client of clients) writeEvent(client, payload);
+function broadcast(payload = frame()): void {
+  for (const client of clients) writeTelemetryEvent(client, payload);
 }
 
 function tick(): void {
@@ -116,51 +112,62 @@ const server = createServer(async (request, response) => {
       'Access-Control-Allow-Origin': '*',
       'X-Accel-Buffering': 'no',
     });
-    response.write(`retry: ${SAMPLE_MS}\n\n`);
     clients.add(response);
-    writeEvent(response, frame());
-    request.on('close', () => clients.delete(response));
+    response.once('close', () => clients.delete(response));
+    response.write(`retry: ${SAMPLE_MS}\n\n`);
+    writeTelemetryEvent(response, frame());
     return;
   }
 
   if (request.method === 'POST' && url.pathname === '/api/control') {
+    let body: unknown;
     try {
       const raw = await readBody(request);
-      const body = raw ? JSON.parse(raw) as Record<string, unknown> : {};
-      if (body.reset === true) {
-        seq = 0;
-        load = 0.78;
-        fault = 'none';
-        paused = false;
-        stress = 0;
-      }
-      if (body.load !== undefined) {
-        if (typeof body.load !== 'number' || !Number.isFinite(body.load)) {
-          sendJson(response, 400, { error: 'load must be a finite number from 0 to 1' });
-          return;
-        }
-        load = Math.min(1, Math.max(0, body.load));
-      }
-      if (body.fault !== undefined) {
-        if (!isFaultMode(body.fault)) {
-          sendJson(response, 400, { error: 'fault must be none or cooling' });
-          return;
-        }
-        fault = body.fault;
-      }
-      if (body.paused !== undefined) {
-        if (typeof body.paused !== 'boolean') {
-          sendJson(response, 400, { error: 'paused must be boolean' });
-          return;
-        }
-        paused = body.paused;
-      }
-      const payload = frame();
-      broadcast();
-      sendJson(response, 200, payload);
+      body = raw ? JSON.parse(raw) : {};
     } catch {
-      sendJson(response, 400, { error: 'invalid json' });
+      if (!response.destroyed) sendJson(response, 400, { error: 'invalid json' });
+      return;
     }
+    if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+      sendJson(response, 400, { error: 'control body must be an object' });
+      return;
+    }
+    const {
+      reset,
+      load: nextLoad,
+      fault: nextFault,
+      paused: nextPaused,
+    } = body as Record<string, unknown>;
+    if (reset !== undefined && typeof reset !== 'boolean') {
+      sendJson(response, 400, { error: 'reset must be boolean' });
+      return;
+    }
+    if (nextLoad !== undefined && (typeof nextLoad !== 'number' || !Number.isFinite(nextLoad))) {
+      sendJson(response, 400, { error: 'load must be a finite number from 0 to 1' });
+      return;
+    }
+    if (nextFault !== undefined && !isFaultMode(nextFault)) {
+      sendJson(response, 400, { error: 'fault must be none or cooling' });
+      return;
+    }
+    if (nextPaused !== undefined && typeof nextPaused !== 'boolean') {
+      sendJson(response, 400, { error: 'paused must be boolean' });
+      return;
+    }
+
+    if (reset === true) {
+      seq = 0;
+      load = 0.78;
+      fault = 'none';
+      paused = false;
+      stress = 0;
+    }
+    if (nextLoad !== undefined) load = Math.min(1, Math.max(0, nextLoad));
+    if (nextFault !== undefined) fault = nextFault;
+    if (nextPaused !== undefined) paused = nextPaused;
+    const payload = frame();
+    broadcast(payload);
+    sendJson(response, 200, payload);
     return;
   }
 
@@ -169,7 +176,9 @@ const server = createServer(async (request, response) => {
 
 const timer = setInterval(tick, SAMPLE_MS);
 server.listen(port, host, () => {
-  console.log(`[sim] local telemetry http://${host}:${port}/api/stream every ${SAMPLE_MS}ms`);
+  const address = server.address();
+  const listeningPort = address && typeof address === 'object' ? address.port : port;
+  console.log(`[sim] local telemetry http://${host}:${listeningPort}/api/stream every ${SAMPLE_MS}ms`);
 });
 
 function shutdown(): void {

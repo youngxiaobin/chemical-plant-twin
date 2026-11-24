@@ -107,6 +107,7 @@ export function RightDock(props: {
   link: LinkStatus;
   trend: number[];
   load: number;
+  drillPaused: boolean;
   weather: WeatherState;
   quality: QualityTier;
   floor: FloorFilter;
@@ -155,6 +156,7 @@ export function RightDock(props: {
 function Overview(props: {
   frame: TelemetryFrame | null;
   load: number;
+  drillPaused: boolean;
   alarmCount: number;
   warningCount: number;
   floor: FloorFilter;
@@ -182,7 +184,7 @@ function Overview(props: {
     <div className="panel-body">
       <h2>运行总览</h2>
       <p className="hint">全厂负荷只改变本地模拟，不连接控制系统。</p>
-      <label className="slider-label">全厂负荷 <b data-testid="load-readout">{props.load}%</b></label>
+      <label className="slider-label">全厂负荷设定 <b data-testid="load-readout">{props.load}%</b></label>
       <input data-testid="load-slider" type="range" min={0} max={100} value={props.load} onChange={(event) => props.onLoad(Number(event.target.value))} />
       <div className="stat-grid">
         <div><span>告警</span><b>{props.alarmCount}</b></div>
@@ -212,7 +214,7 @@ function Overview(props: {
       <div className="button-row">
         <button className="warn" data-testid="fault-button" onClick={props.onFault}>故障演练</button>
         <button data-testid="recover-button" onClick={props.onRecover}>恢复</button>
-        <button data-testid="pause-button" onClick={props.onPause}>{props.frame?.paused ? '继续' : '暂停'}</button>
+        <button data-testid="pause-button" onClick={props.onPause}>{props.drillPaused ? '继续' : '暂停'}</button>
         <button data-testid="reset-button" onClick={props.onReset}>重置</button>
       </div>
       <label className="slider-label">画质
@@ -336,13 +338,13 @@ export function BottomBar(props: {
   selected: AssetDef | null;
   frame: TelemetryFrame | null;
   link: LinkStatus;
-  load: number;
 }) {
   const reading = props.selected ? props.frame?.assets[props.selected.id] : null;
   const readings = props.frame ? Object.values(props.frame.assets) : [];
   const average = readings.length ? readings.reduce((sum, item) => sum + item.temperature.value, 0) / readings.length : null;
   const pressure = readings.length ? readings.reduce((sum, item) => sum + item.pressure.value, 0) / readings.length : null;
   const feed = props.frame?.assets['P-401']?.flow.value;
+  const load = props.frame ? String(Math.round(props.frame.load * 100)) : '—';
   return (
     <footer className="bottombar">
       <div>
@@ -352,7 +354,7 @@ export function BottomBar(props: {
       <Metric label={reading ? '温度' : '均温'} value={reading ? num(reading.temperature.value, 1) : average === null ? '—' : num(average, 1)} unit="°C" />
       <Metric label={reading ? '压力' : '均压'} value={reading ? num(reading.pressure.value, 3) : pressure === null ? '—' : num(pressure, 3)} unit="MPa" />
       <Metric label={reading ? '流量' : '进料'} value={reading ? num(reading.flow.value, 1) : feed === undefined ? '—' : num(feed, 1)} unit="m³/h" />
-      <Metric label="负荷" value={String(props.load)} unit="%" />
+      <Metric label="负荷" value={load} unit="%" />
       <div className="bottom-note">{props.link === 'live' && !props.frame?.paused ? '数值来自本地模拟' : '数值为最后已知采样'}</div>
     </footer>
   );

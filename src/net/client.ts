@@ -17,62 +17,92 @@ export function connectTelemetry(options: {
   let closed = false;
   let manualOffline = false;
   let attempt = 0;
-  let retryTimer = 0;
-  let lastMessage = 0;
+  let retryTimer: number | undefined;
+  let staleTimer: number | undefined;
+  let expiresAt: number | null = null;
+  let status: LinkStatus | null = null;
 
-  const staleTimer = window.setInterval(() => {
-    if (closed || manualOffline || !source) return;
-    if (lastMessage > 0 && Date.now() - lastMessage > staleMs) options.onStatus('stale');
-  }, 400);
+  function setStatus(next: LinkStatus): void {
+    if (status === next) return;
+    status = next;
+    options.onStatus(next);
+  }
+
+  function reconnectStatus(): LinkStatus {
+    return expiresAt !== null && window.performance.now() >= expiresAt ? 'stale' : 'reconnecting';
+  }
+
+  function scheduleExpiry(): void {
+    window.clearTimeout(staleTimer);
+    if (expiresAt === null) return;
+    const remaining = Math.max(0, expiresAt - window.performance.now());
+    staleTimer = window.setTimeout(() => {
+      staleTimer = undefined;
+      if (!closed && !manualOffline) setStatus('stale');
+    }, Math.ceil(remaining));
+  }
+
+  function closeSource(): void {
+    const previous = source;
+    source = null;
+    previous?.close();
+  }
 
   function open(): void {
     if (closed || manualOffline) return;
-    source?.close();
-    source = new EventSource('/api/stream');
-    source.onopen = () => {
+    closeSource();
+    const stream = new EventSource('/api/stream');
+    source = stream;
+    stream.onmessage = (event) => {
+      if (source !== stream) return;
+      const frame = parseFrame(event.data);
+      if (frame === null) return;
       attempt = 0;
-      lastMessage = Date.now();
-      options.onStatus('live');
+      expiresAt = window.performance.now() + staleMs;
+      scheduleExpiry();
+      setStatus('live');
+      if (source === stream) options.onFrame(frame);
     };
-    source.onmessage = (event) => {
-      lastMessage = Date.now();
-      options.onStatus('live');
-      options.onFrame(JSON.parse(event.data) as TelemetryFrame);
-    };
-    source.onerror = () => {
-      source?.close();
-      source = null;
-      if (closed || manualOffline) return;
-      options.onStatus(lastMessage > 0 && Date.now() - lastMessage > staleMs ? 'stale' : 'reconnecting');
+    stream.onerror = () => {
+      if (source !== stream) return;
+      closeSource();
       const delay = Math.min(8000, 500 * 2 ** attempt);
       attempt += 1;
-      window.clearTimeout(retryTimer);
-      retryTimer = window.setTimeout(open, delay);
+      retryTimer = window.setTimeout(() => {
+        retryTimer = undefined;
+        open();
+      }, delay);
+      setStatus(reconnectStatus());
     };
   }
 
-  options.onStatus('connecting');
+  setStatus('connecting');
   open();
 
   return {
     disconnect() {
+      if (closed) return;
       manualOffline = true;
       window.clearTimeout(retryTimer);
-      source?.close();
-      source = null;
-      options.onStatus('offline');
+      window.clearTimeout(staleTimer);
+      closeSource();
+      setStatus('offline');
     },
     reconnect() {
+      if (closed) return;
       manualOffline = false;
       attempt = 0;
-      options.onStatus('reconnecting');
+      window.clearTimeout(retryTimer);
+      closeSource();
+      scheduleExpiry();
+      setStatus(reconnectStatus());
       open();
     },
     close() {
       closed = true;
-      window.clearInterval(staleTimer);
+      window.clearTimeout(staleTimer);
       window.clearTimeout(retryTimer);
-      source?.close();
+      closeSource();
     },
   };
 }
@@ -88,4 +118,46 @@ export async function postControl(body: Record<string, unknown>): Promise<Teleme
     throw new Error(text || `control ${response.status}`);
   }
   return await response.json() as TelemetryFrame;
+}
+
+function parseFrame(data: string): TelemetryFrame | null {
+  try {
+    const frame: unknown = JSON.parse(data);
+    return isTelemetryFrame(frame) ? frame : null;
+  } catch {
+    return null;
+  }
+}
+
+function isTelemetryFrame(frame: unknown): frame is TelemetryFrame {
+  return isRecord(frame)
+    && Number.isSafeInteger(frame.seq)
+    && typeof frame.timestamp === 'string'
+    && frame.simulated === true
+    && frame.source === 'local-deterministic-sim'
+    && typeof frame.disclaimer === 'string'
+    && typeof frame.paused === 'boolean'
+    && Number.isFinite(frame.load)
+    && (frame.fault === 'none' || frame.fault === 'cooling')
+    && Number.isFinite(frame.stress)
+    && isRecord(frame.assets)
+    && Object.values(frame.assets).every(isAssetReading);
+}
+
+function isAssetReading(reading: unknown): boolean {
+  return isRecord(reading)
+    && (reading.status === 'normal' || reading.status === 'warning' || reading.status === 'alarm')
+    && [reading.temperature, reading.pressure, reading.flow, reading.level].every(isMeasure);
+}
+
+function isMeasure(measure: unknown): boolean {
+  return isRecord(measure)
+    && Number.isFinite(measure.value)
+    && typeof measure.unit === 'string'
+    && Number.isFinite(measure.low)
+    && Number.isFinite(measure.high);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }

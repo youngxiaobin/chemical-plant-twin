@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { ASSET_IDS, PIPES, anchorWorld, buildWaypoints } from '../src/sim/plant.ts';
 import { dist } from '../src/sim/route.ts';
+import { computeReadings } from '../src/sim/telemetry.ts';
 
 test('ten directed pipes stay on known assets', () => {
   assert.equal(PIPES.length, 10);
@@ -43,4 +44,16 @@ test('waypoints keep both endpoints and follow an expanded floor', () => {
   const drum = anchorWorld('V-301', 'inlet', 10);
   const drumHome = anchorWorld('V-301', 'inlet', 0);
   assert.ok(Math.abs(drum.y - drumHome.y - 20) < 1e-6);
+});
+
+test('冷凝和产品出料管线各自使用对应的模拟流量', () => {
+  const condenser = PIPES.find((pipe) => pipe.id === 'L05');
+  const product = PIPES.find((pipe) => pipe.id === 'L08');
+  assert.ok(condenser && product);
+  assert.equal(condenser.flowAsset, 'T-102');
+  assert.equal(product.flowAsset, 'TK-202');
+
+  const readings = computeReadings({ seq: 0, load: 0.78, stress: 0 });
+  assert.equal(readings[condenser.flowAsset].flow.value, 122.3);
+  assert.equal(readings[product.flowAsset].flow.value, 59.2);
 });

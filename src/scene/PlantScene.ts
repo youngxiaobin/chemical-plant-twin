@@ -112,8 +112,9 @@ export class PlantScene {
   private readonly sun: DirectionalLight;
   private readonly hemi: HemisphereLight;
   private readonly lampLights: PointLight[] = [];
-  private rain: LineSegments | null = null;
-  private rainMaterial: ShaderMaterial | null = null;
+  private rain: LineSegments<BufferGeometry, ShaderMaterial> | null = null;
+  private baseSunIntensity = 1.45;
+  private lightningEndsAt = 0;
   private readonly waterMaterial: ShaderMaterial;
   private particles: InstancedMesh | null = null;
   private steam: InstancedMesh | null = null;
@@ -140,15 +141,23 @@ export class PlantScene {
   private fpsElapsed = 0;
   private treeArchive: SceneDiagnostics['treeArchive'] = 'pending';
   private readonly onPick: (id: string | null) => void;
+  private readonly onTourChange: (touring: boolean) => void;
   private readonly host: HTMLElement;
   private readonly canvas: HTMLCanvasElement;
   private pointerDown = new Vector2();
   private sky: ReturnType<typeof skyTexture> | null = null;
 
-  constructor(host: HTMLElement, weather: WeatherState, onPick: (id: string | null) => void, onFatal: (message: string) => void) {
+  constructor(
+    host: HTMLElement,
+    weather: WeatherState,
+    onPick: (id: string | null) => void,
+    onFatal: (message: string) => void,
+    onTourChange: (touring: boolean) => void,
+  ) {
     this.host = host;
     this.weather = weather;
     this.onPick = onPick;
+    this.onTourChange = onTourChange;
     this.surfaces.gold.emissive.set('#6b4a16');
     this.surfaces.gold.emissiveIntensity = 0.32;
     this.reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -182,16 +191,14 @@ export class PlantScene {
     this.controls.maxPolarAngle = Math.PI * 0.49;
     this.controls.minDistance = 10;
     this.controls.maxDistance = 240;
-    this.controls.addEventListener('start', () => {
-      this.touring = false;
-    });
+    this.controls.addEventListener('start', () => this.setTouring(false));
 
     this.css = new CSS2DRenderer();
     this.css.domElement.className = 'labels';
     host.appendChild(this.css.domElement);
 
     this.hemi = new HemisphereLight('#d5e4ee', '#6a7370', 0.72);
-    this.sun = new DirectionalLight('#fff4dd', 1.45);
+    this.sun = new DirectionalLight('#fff4dd', this.baseSunIntensity);
     this.sun.position.set(48, 72, 26);
     this.sun.castShadow = true;
     this.sun.shadow.mapSize.set(2048, 2048);
@@ -253,6 +260,7 @@ export class PlantScene {
       event.preventDefault();
       onFatal('WebGL 上下文已丢失。请刷新页面。');
       this.running = false;
+      this.setTouring(false);
     });
     void this.loadArchiveTrees();
     this.frameId = requestAnimationFrame(this.animate);
@@ -300,21 +308,21 @@ export class PlantScene {
   setReducedMotion(enabled: boolean): void {
     this.reducedMotion = enabled;
     this.controls.enableDamping = !enabled;
+    if (enabled) this.stopLightning();
   }
 
   resetView(): void {
-    this.touring = false;
+    this.setTouring(false);
     this.moveCamera(HOME.position, HOME.target, true);
   }
 
   topView(): void {
-    this.touring = false;
+    this.setTouring(false);
     this.moveCamera(TOP.position, TOP.target, true);
   }
 
   toggleTour(): boolean {
-    this.touring = !this.touring;
-    this.tourElapsed = 0;
+    this.setTouring(!this.touring);
     return this.touring;
   }
 
@@ -322,7 +330,7 @@ export class PlantScene {
     const origin = assetOrigin(id, this.gap());
     const target = new Vector3(origin.x, Math.max(4, origin.y + 4), origin.z);
     const position = target.clone().add(new Vector3(-16, 12, 18));
-    this.touring = false;
+    this.setTouring(false);
     this.moveCamera(position, target, true);
   }
 
@@ -507,15 +515,16 @@ export class PlantScene {
     for (let i = 0; i < count; i += 1) resetDrop(positions, i, true);
     const geometry = new BufferGeometry();
     geometry.setAttribute('position', new BufferAttribute(positions, 3));
-    this.rainMaterial = new ShaderMaterial({
-      uniforms: { uStrength: { value: 0.7 } },
+    const material = this.rain?.material ?? new ShaderMaterial({
+      uniforms: { uStrength: { value: 0 } },
       vertexShader: rainVert,
       fragmentShader: rainFrag,
       transparent: true,
       depthWrite: false,
     });
-    this.rain = new LineSegments(geometry, this.rainMaterial);
+    this.rain = new LineSegments(geometry, material);
     this.rain.frustumCulled = false;
+    this.syncRainWeather();
     this.scene.add(this.rain);
   }
 
@@ -559,7 +568,8 @@ export class PlantScene {
     const rain = weather.particles ? weather.rain : 0;
     const density = weather.fog ? (night ? 0.004 : 0.006) + rain * 0.012 + (storm ? 0.004 : 0) : 0.0015;
     this.scene.fog = new FogExp2(night ? '#1a232b' : storm ? '#8b989f' : '#b7c3c9', density);
-    this.sun.intensity = night ? 0.28 : storm ? 0.85 : 1.35 - rain * 0.25;
+    this.baseSunIntensity = night ? 0.28 : storm ? 0.85 : 1.35 - rain * 0.25;
+    this.stopLightning();
     this.sun.color.set(night ? '#9eb4d6' : '#fff2d8');
     this.hemi.intensity = night ? 0.38 : 0.75;
     this.hemi.color.set(night ? '#223044' : '#d7e6ef');
@@ -569,9 +579,8 @@ export class PlantScene {
     if (this.vane) this.vane.visible = weather.vane;
     for (const puddle of this.puddles) puddle.visible = weather.puddles && weather.rain > 0.08;
     this.waterMaterial.uniforms.uRain.value = weather.rain;
-    if (!this.rain) this.rebuildRain();
-    if (this.rain) this.rain.visible = weather.particles && weather.rain > 0.03;
-    if (this.rainMaterial) this.rainMaterial.uniforms.uStrength.value = 0.25 + weather.rain * 0.7;
+    if (this.rain) this.syncRainWeather();
+    else this.rebuildRain();
     this.syncReflector();
     this.renderer.toneMappingExposure = night ? 0.92 : 1.12 - rain * 0.08;
   }
@@ -658,8 +667,14 @@ export class PlantScene {
       const raycaster = new Raycaster();
       raycaster.setFromCamera(ndc, this.camera);
       const hits = raycaster.intersectObjects(this.scene.children, true);
-      const hit = hits.find((item) => item.object.visible && findAssetId(item.object));
-      this.onPick(hit ? findAssetId(hit.object) : null);
+      for (const hit of hits) {
+        const id = findVisibleAssetId(hit.object);
+        if (id !== null) {
+          this.onPick(id);
+          return;
+        }
+      }
+      this.onPick(null);
     });
   }
 
@@ -687,9 +702,7 @@ export class PlantScene {
     if (this.vane && this.vane.visible) {
       this.vane.rotation.y = Math.sin(time * (0.4 + this.weather.wind)) * 0.4 + 0.8;
     }
-    if (this.weather.lightning && this.weather.mode === 'storm' && !this.reducedMotion && Math.random() < 0.008) {
-      this.sun.intensity = 2.4;
-    }
+    this.updateLightning(time);
     this.renderer.render(this.scene, this.camera);
     this.css.render(this.scene, this.camera);
     this.fpsFrames += 1;
@@ -708,7 +721,7 @@ export class PlantScene {
     if (this.reducedMotion) {
       this.moveCamera(pose.position, pose.target, true);
       this.tourIndex += 1;
-      this.touring = false;
+      this.setTouring(false);
       return;
     }
     this.moveCamera(pose.position, pose.target, false);
@@ -826,15 +839,45 @@ export class PlantScene {
       this.treeArchive = 'fallback';
     }
   }
+
+  private setTouring(touring: boolean): void {
+    if (this.touring === touring) return;
+    this.touring = touring;
+    this.tourElapsed = 0;
+    this.onTourChange(touring);
+  }
+
+  private syncRainWeather(): void {
+    if (!this.rain) return;
+    const { particles, rain } = this.weather;
+    this.rain.visible = particles && rain > 0.03;
+    this.rain.material.uniforms.uStrength.value = 0.25 + rain * 0.7;
+  }
+
+  private updateLightning(time: number): void {
+    if (this.lightningEndsAt > 0) {
+      if (time >= this.lightningEndsAt) this.stopLightning();
+      return;
+    }
+    if (this.weather.lightning && this.weather.mode === 'storm' && !this.reducedMotion && Math.random() < 0.008) {
+      this.lightningEndsAt = time + 0.2;
+      this.sun.intensity = 2.4;
+    }
+  }
+
+  private stopLightning(): void {
+    this.lightningEndsAt = 0;
+    this.sun.intensity = this.baseSunIntensity;
+  }
 }
 
-function findAssetId(object: Object3D | null): string | null {
-  let current: Object3D | null = object;
-  while (current) {
-    if (typeof current.userData.assetId === 'string') return current.userData.assetId;
-    current = current.parent;
+function findVisibleAssetId(object: Object3D): string | null {
+  let id: string | null = null;
+  for (let current: Object3D | null = object; current; current = current.parent) {
+    if (!current.visible) return null;
+    if (id === null && typeof current.userData.assetId === 'string') id = current.userData.assetId;
   }
-  return null;
+  return id;
 }
 
 function disposeObject(object: Object3D): void {

@@ -5,6 +5,7 @@ import { DEFAULT_WEATHER } from '../sim/view.ts';
 export interface ViewportApi {
   scene: PlantScene | null;
   onPick: (id: string | null) => void;
+  onTourChange: (touring: boolean) => void;
 }
 
 function PlantViewportComponent({ api }: { api: { current: ViewportApi } }) {
@@ -14,9 +15,16 @@ function PlantViewportComponent({ api }: { api: { current: ViewportApi } }) {
   useEffect(() => {
     const element = host.current;
     if (!element) return;
+    api.current.onTourChange(false);
     let scene: PlantScene | null = null;
     try {
-      scene = new PlantScene(element, DEFAULT_WEATHER, (id) => api.current.onPick(id), setError);
+      scene = new PlantScene(
+        element,
+        DEFAULT_WEATHER,
+        (id) => api.current.onPick(id),
+        setError,
+        (touring) => api.current.onTourChange(touring),
+      );
       api.current.scene = scene;
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '无法创建三维场景');

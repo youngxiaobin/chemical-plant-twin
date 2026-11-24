@@ -68,7 +68,7 @@ export const PIPES: PipeDef[] = [
   { id: 'L05', name: '塔顶冷凝', from: 'T-102', to: 'CW-301', fromAnchor: 'overhead', toAnchor: 'processIn', flowAsset: 'T-102', lane: 'L2', aisleZ: 2.4, direct: false },
   { id: 'L06', name: '凝液进罐', from: 'CW-301', to: 'V-301', fromAnchor: 'processOut', toAnchor: 'inlet', flowAsset: 'CW-301', lane: 'L2', aisleZ: 5, direct: false },
   { id: 'L07', name: '回流', from: 'V-301', to: 'T-102', fromAnchor: 'reflux', toAnchor: 'reflux', flowAsset: 'V-301', lane: 'L2', aisleZ: -3.2, direct: false },
-  { id: 'L08', name: '产品出料', from: 'T-102', to: 'TK-202', fromAnchor: 'bottoms', toAnchor: 'inlet', flowAsset: 'T-102', lane: 'L0', aisleZ: 11, direct: false },
+  { id: 'L08', name: '产品出料', from: 'T-102', to: 'TK-202', fromAnchor: 'bottoms', toAnchor: 'inlet', flowAsset: 'TK-202', lane: 'L0', aisleZ: 11, direct: false },
   { id: 'L09', name: '冷却上水', from: 'CW-302', to: 'CW-301', fromAnchor: 'supply', toAnchor: 'waterIn', flowAsset: 'CW-302', lane: 'L0', aisleZ: 20, direct: true },
   { id: 'L10', name: '吸收尾气', from: 'T-103', to: 'T-104', fromAnchor: 'overhead', toAnchor: 'feed', flowAsset: 'T-103', lane: 'L1', aisleZ: -14, direct: false },
 ];

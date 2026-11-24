@@ -9,7 +9,7 @@ test('asset manifest matches stable ids, origins and directed pipes', () => {
     east: string;
     north: string;
     assets: Array<{ id: string; origin: { x: number; y: number; z: number }; tutorialAnalog: string }>;
-    pipes: Array<{ id: string; from: string; to: string }>;
+    pipes: Array<{ id: string; from: string; to: string; flowAsset: string }>;
   };
   assert.equal(manifest.units, 'm');
   assert.equal(manifest.east, '+X');
@@ -22,5 +22,8 @@ test('asset manifest matches stable ids, origins and directed pipes', () => {
     assert.equal(asset.origin.z, Math.round(origin.z * 1000) / 1000);
     assert.ok(asset.tutorialAnalog.length > 0);
   }
-  assert.deepEqual(manifest.pipes.map((pipe) => [pipe.id, pipe.from, pipe.to]), PIPES.map((pipe) => [pipe.id, pipe.from, pipe.to]));
+  assert.deepEqual(
+    manifest.pipes.map(({ id, from, to, flowAsset }) => [id, from, to, flowAsset]),
+    PIPES.map(({ id, from, to, flowAsset }) => [id, from, to, flowAsset]),
+  );
 });
